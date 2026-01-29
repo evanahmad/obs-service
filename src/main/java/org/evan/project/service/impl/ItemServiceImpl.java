@@ -1,7 +1,6 @@
 package org.evan.project.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.evan.project.fault.ObsFault;
 import org.evan.project.fault.ResourceNotFoundException;
 import org.evan.project.model.entity.Item;
 import org.evan.project.model.enums.InventoryType;
@@ -25,19 +24,17 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public Item updateItem(Long id, Item item) {
-        Item existing = getById(id);
-
-        existing.setName(item.getName());
-        existing.setPrice(item.getPrice());
-
+    public Item updateItem(Long id, Item updated) {
+        var existing = getById(id);
+        existing.setName(updated.getName());
+        existing.setPrice(updated.getPrice());
         return itemRepository.save(existing);
     }
 
     @Override
     public Item getById(Long id) {
         return itemRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException(ObsFault.RESOURCE_NOT_FOUND));
+                .orElseThrow(ResourceNotFoundException::new);
     }
 
     @Override
@@ -47,21 +44,19 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public void delete(Long id) {
-        Item item = getById(id);
-        itemRepository.delete(item);
+        itemRepository.delete(getById(id));
     }
 
     @Override
     public int getRemainingStock(Long itemId) {
-        Integer totalTopUp = inventoryRepository.sumQuantityByItemIdAndType(
-                itemId, InventoryType.T
-        );
 
-        Integer totalWithdrawal = inventoryRepository.sumQuantityByItemIdAndType(
-                itemId, InventoryType.W
-        );
+        var totalIn = inventoryRepository
+                .sumQuantityByItemIdAndType(itemId, InventoryType.T);
 
-        return (totalTopUp == null ? 0 : totalTopUp)
-                - (totalWithdrawal == null ? 0 : totalWithdrawal);
+        var totalOut = inventoryRepository
+                .sumQuantityByItemIdAndType(itemId, InventoryType.W);
+
+        return (totalIn == null ? 0 : totalIn)
+                - (totalOut == null ? 0 : totalOut);
     }
 }

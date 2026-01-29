@@ -10,4 +10,4 @@ public interface BaseService<T, ID> {
     Page<T> getAll(Pageable pageable);
 
     void delete(ID id);
- }
+}

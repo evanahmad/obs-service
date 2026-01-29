@@ -2,7 +2,6 @@ package org.evan.project.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.evan.project.fault.InsufficientStockException;
-import org.evan.project.fault.ObsFault;
 import org.evan.project.fault.ResourceNotFoundException;
 import org.evan.project.model.entity.Order;
 import org.evan.project.model.enums.InventoryType;
@@ -10,6 +9,7 @@ import org.evan.project.repository.OrderRepository;
 import org.evan.project.service.InventoryService;
 import org.evan.project.service.ItemService;
 import org.evan.project.service.OrderService;
+import org.evan.project.util.QuantityValidator;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -25,20 +25,18 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public Order createOrder(Long itemId, int quantity) {
 
-        if (quantity <= 0) {
-            throw new InsufficientStockException(ObsFault.INSUFFICIENT_STOCK);
-        }
+        QuantityValidator.validatePositive(quantity);
 
         var item = itemService.getById(itemId);
+        var remainingStock = itemService.getRemainingStock(itemId);
 
-        int remainingStock = itemService.getRemainingStock(itemId);
         if (remainingStock < quantity) {
-            throw new InsufficientStockException(ObsFault.INSUFFICIENT_STOCK);
+            throw new InsufficientStockException();
         }
 
         inventoryService.create(itemId, quantity, InventoryType.W);
 
-        Order order = Order.builder()
+        var order = Order.builder()
                 .item(item)
                 .qty(quantity)
                 .price(item.getPrice())
@@ -48,9 +46,17 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    public Order updateOrder(Long id, int quantity) {
+        QuantityValidator.validatePositive(quantity);
+        var existing = getById(id);
+        existing.setQty(quantity);
+        return orderRepository.save(existing);
+    }
+
+    @Override
     public Order getById(Long id) {
         return orderRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException(ObsFault.RESOURCE_NOT_FOUND));
+                .orElseThrow(ResourceNotFoundException::new);
     }
 
     @Override
@@ -59,21 +65,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public Order updateOrder(Long id, int qty) {
-
-        if (qty <= 0) {
-            throw new InsufficientStockException();
-        }
-
-        Order existing = getById(id);
-        existing.setQty(qty);
-
-        return orderRepository.save(existing);
-    }
-
-    @Override
     public void delete(Long id) {
-        Order order = getById(id);
-        orderRepository.delete(order);
+        orderRepository.delete(getById(id));
     }
 }

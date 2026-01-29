@@ -13,20 +13,20 @@ public enum ObsFault {
     ),
 
     RESOURCE_NOT_FOUND(
-            "RES_ERROR_404",
-            "The requested resource was not found"
+            "RES_NOT_FOUND_001",
+            "The requested resource does not exist"
     ),
 
     INVALID_INPUT(
-            "REQ_ERROR_400",
-            "The request contains invalid or malformed input"
+            "REQ_INVALID_002",
+            "Request input validation failed"
     ),
 
     INSUFFICIENT_STOCK(
-            "INV_ERROR_409",
+            "INV_STOCK_003",
             "Insufficient stock to fulfill the requested quantity"
     );
 
     private final String code;
-    private final String defaultMessage;
+    private final String message;
 }

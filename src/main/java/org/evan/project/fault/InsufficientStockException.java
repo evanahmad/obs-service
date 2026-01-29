@@ -1,19 +1,14 @@
 package org.evan.project.fault;
 
-import lombok.Getter;
-
-@Getter
 public class InsufficientStockException extends RuntimeException {
 
-    private final ObsFault fault;
+    private static final ObsFault FAULT = ObsFault.INSUFFICIENT_STOCK;
 
     public InsufficientStockException() {
-        super("Request must be greater than zero");
-        this.fault = ObsFault.INSUFFICIENT_STOCK;
+        super(FAULT.getMessage());
     }
 
-    public InsufficientStockException(ObsFault fault) {
-        super(fault.getDefaultMessage());
-        this.fault = fault;
+    public ObsFault getFault() {
+        return FAULT;
     }
 }
