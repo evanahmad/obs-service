@@ -15,7 +15,7 @@ import lombok.Setter;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "order")
+@Table(name = "orders")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -29,7 +29,7 @@ public class Order {
 
     @ManyToOne(optional = false)
     @JoinColumn(nullable = false, name = "item_id")
-    private Item itemId;
+    private Item item;
 
     private int qty;
 
