@@ -20,7 +20,7 @@ This project demonstrates:
 * Spring Data JPA (Hibernate)
 * H2 Database (in-memory)
 * Lombok
-* Maven / Gradle
+* Gradle
 
 ---
 
@@ -193,21 +193,3 @@ All errors follow a unified structure:
 * Designed to be easily extended (payment, shipment, auth)
 
 ---
-
-## 🚀 Next Possible Improvements
-
-* DTO + Mapper layer
-* Optimistic locking for inventory
-* Integration tests
-* Swagger / OpenAPI
-* Authentication & authorization
-
----
-
-## 👤 Author
-
-Built as a **learning + production-grade backend exercise**.
-
-Feel free to extend, refactor, or plug this into a frontend.
-
-Happy coding ✨
