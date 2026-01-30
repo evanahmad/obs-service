@@ -1,75 +1,71 @@
 package org.evan.project.controller;
 
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
 import org.evan.project.model.entity.Item;
+import org.evan.project.model.request.ItemRequest;
 import org.evan.project.model.response.ApiResponse;
 import org.evan.project.model.response.ItemWithStockResponse;
-import org.evan.project.model.request.ItemRequest;
 import org.evan.project.service.ItemService;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
 
-@RestController
-@RequestMapping("/api/v1/items")
-@RequiredArgsConstructor
+@Path("/api/v1/items")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
 public class ItemController {
 
     private final ItemService itemService;
 
-    @GetMapping("/{id}")
+    public ItemController(ItemService itemService) {
+        this.itemService = itemService;
+    }
+
+    @GET
+    @Path("/{id}")
     public ApiResponse<?> getById(
-            @PathVariable Long id,
-            @RequestParam(defaultValue = "false") boolean includeStock
+            @PathParam("id") Long id,
+            @QueryParam("includeStock") @DefaultValue("false") boolean includeStock
     ) {
         var item = itemService.getById(id);
 
         if (includeStock) {
             int stock = itemService.getRemainingStock(id);
-            return ApiResponse.of(
-                    new ItemWithStockResponse(item, stock)
-            );
+            return ApiResponse.of(new ItemWithStockResponse(item, stock));
         }
 
         return ApiResponse.of(item);
     }
 
-    @PostMapping
-    public ApiResponse<Item> create(
-            @Valid @RequestBody ItemRequest request
-    ) {
+    @POST
+    public ApiResponse<Item> create(@Valid ItemRequest request) {
         var item = Item.builder()
                 .name(request.name())
                 .price(request.price())
                 .build();
-
         return ApiResponse.of(itemService.createItem(item));
     }
 
-    @PutMapping("/{id}")
-    public ApiResponse<Item> update(
-            @PathVariable Long id,
-            @Valid @RequestBody ItemRequest request
+    @POST
+    @Path("/{id}/top-up")
+    public ApiResponse<String> topUp(
+            @PathParam("id") Long id,
+            @QueryParam("qty") int qty
     ) {
-        var item = Item.builder()
-                .name(request.name())
-                .price(request.price())
-                .build();
-
-        return ApiResponse.of(itemService.updateItem(id, item));
+        itemService.topUpStock(id, qty);
+        return ApiResponse.of("Stock updated successfully");
     }
 
-    @DeleteMapping("/{id}")
-    public ApiResponse<Void> delete(
-            @PathVariable Long id
-    ) {
+    @DELETE
+    @Path("/{id}")
+    public ApiResponse<Void> delete(@PathParam("id") Long id) {
         itemService.delete(id);
         return ApiResponse.of(null);
     }

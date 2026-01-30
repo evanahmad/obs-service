@@ -37,4 +37,6 @@ public class Item {
     @NotNull(message = "Price is mandatory")
     @DecimalMin(value = "0.0")
     private BigDecimal price;
+
+    private int stock;
 }

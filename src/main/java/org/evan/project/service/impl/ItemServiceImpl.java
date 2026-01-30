@@ -1,62 +1,70 @@
 package org.evan.project.service.impl;
 
-import lombok.RequiredArgsConstructor;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
 import org.evan.project.fault.ResourceNotFoundException;
 import org.evan.project.model.entity.Item;
-import org.evan.project.model.enums.InventoryType;
-import org.evan.project.repository.InventoryRepository;
 import org.evan.project.repository.ItemRepository;
 import org.evan.project.service.ItemService;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
 
-@Service
-@RequiredArgsConstructor
+import java.util.List;
+
+@ApplicationScoped
 public class ItemServiceImpl implements ItemService {
 
     private final ItemRepository itemRepository;
-    private final InventoryRepository inventoryRepository;
 
-    @Override
-    public Item createItem(Item item) {
-        return itemRepository.save(item);
-    }
-
-    @Override
-    public Item updateItem(Long id, Item updated) {
-        var existing = getById(id);
-        existing.setName(updated.getName());
-        existing.setPrice(updated.getPrice());
-        return itemRepository.save(existing);
+    public ItemServiceImpl(ItemRepository itemRepository) {
+        this.itemRepository = itemRepository;
     }
 
     @Override
     public Item getById(Long id) {
-        return itemRepository.findById(id)
+        return itemRepository.findByIdOptional(id)
                 .orElseThrow(ResourceNotFoundException::new);
     }
 
     @Override
-    public Page<Item> getAll(Pageable pageable) {
-        return itemRepository.findAll(pageable);
+    public List<Item> getAll(int page, int size) {
+        return itemRepository.findAll()
+                .page(page, size)
+                .list();
     }
 
     @Override
-    public void delete(Long id) {
-        itemRepository.delete(getById(id));
+    @Transactional
+    public Item createItem(Item item) {
+        itemRepository.persist(item);
+        return item;
     }
 
     @Override
     public int getRemainingStock(Long itemId) {
+        return getById(itemId).getStock();
+    }
 
-        var totalIn = inventoryRepository
-                .sumQuantityByItemIdAndType(itemId, InventoryType.T);
+    @Override
+    @Transactional
+    public void topUpStock(Long itemId, int quantity) {
+        Item item = getById(itemId);
+        item.setStock(item.getStock() + quantity);
+    }
 
-        var totalOut = inventoryRepository
-                .sumQuantityByItemIdAndType(itemId, InventoryType.W);
+    @Override
+    @Transactional
+    public void decreaseStock(Long itemId, int quantity) {
+        Item item = getById(itemId);
+        if (item.getStock() < quantity) {
+            throw new org.evan.project.fault.InsufficientStockException();
+        }
+        item.setStock(item.getStock() - quantity);
+    }
 
-        return (totalIn == null ? 0 : totalIn)
-                - (totalOut == null ? 0 : totalOut);
+    @Override
+    @Transactional
+    public void delete(Long id) {
+        if (!itemRepository.deleteById(id)) {
+            throw new ResourceNotFoundException();
+        }
     }
 }

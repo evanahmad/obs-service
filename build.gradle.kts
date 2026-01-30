@@ -1,7 +1,6 @@
 plugins {
 	java
-	id("org.springframework.boot") version "3.5.9"
-	id("io.spring.dependency-management") version "1.1.7"
+	id("io.quarkus") version "3.15.1"
 }
 
 group = "id.co.evan.project"
@@ -25,20 +24,24 @@ repositories {
 }
 
 dependencies {
-	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-	implementation("org.springframework.boot:spring-boot-starter-web")
-	implementation("org.springframework.boot:spring-boot-starter-validation")
+	implementation(enforcedPlatform("io.quarkus.platform:quarkus-bom:3.15.1"))
+	implementation("io.quarkus:quarkus-resteasy-reactive-jackson")
+	implementation("io.quarkus:quarkus-hibernate-orm-panache")
+	implementation("io.quarkus:quarkus-hibernate-validator")
+	implementation("io.quarkus:quarkus-jdbc-h2")
 
-	compileOnly("org.projectlombok:lombok")
+	compileOnly("org.projectlombok:lombok:1.18.34")
+	annotationProcessor("org.projectlombok:lombok:1.18.34")
 
-	runtimeOnly("com.h2database:h2")
-	annotationProcessor("org.projectlombok:lombok")
-
-	testImplementation("org.springframework.boot:spring-boot-starter-test")
-
-	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+	testImplementation("io.quarkus:quarkus-junit5")
+	testImplementation("io.rest-assured:rest-assured")
 }
 
 tasks.withType<Test> {
-	useJUnitPlatform()
+	systemProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager")
+}
+
+tasks.withType<JavaCompile> {
+	options.encoding = "UTF-8"
+	options.compilerArgs.add("-parameters")
 }

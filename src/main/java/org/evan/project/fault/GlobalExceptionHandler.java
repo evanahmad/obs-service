@@ -1,52 +1,45 @@
 package org.evan.project.fault;
 
-import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
+import jakarta.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.ext.Provider;
 import jakarta.validation.ConstraintViolationException;
-import lombok.extern.log4j.Log4j2;
 import org.evan.project.model.response.ErrorResponse;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.jboss.logging.Logger;
 
-@Log4j2
-@RestControllerAdvice
-public class GlobalExceptionHandler {
+@Provider
+public class GlobalExceptionHandler implements ExceptionMapper<Throwable> {
 
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleNotFound(
-            ResourceNotFoundException ex,
-            HttpServletRequest request
-    ) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ErrorResponse.of(ex.getFault(), request.getRequestURI()));
+    private static final Logger LOG = Logger.getLogger(GlobalExceptionHandler.class);
+
+    @Context
+    UriInfo uriInfo;
+
+    @Override
+    public Response toResponse(Throwable exception) {
+        String currentPath = uriInfo.getPath();
+
+        if (exception instanceof ResourceNotFoundException ex) {
+            return buildResponse(Response.Status.NOT_FOUND, ex.getFault(), currentPath);
+        }
+
+        if (exception instanceof InsufficientStockException ex) {
+            return buildResponse(Response.Status.BAD_REQUEST, ex.getFault(), currentPath);
+        }
+
+        if (exception instanceof ConstraintViolationException) {
+            return buildResponse(Response.Status.BAD_REQUEST, ObsFault.INVALID_INPUT, currentPath);
+        }
+
+        LOG.error("Unexpected error at " + currentPath, exception);
+        return buildResponse(Response.Status.INTERNAL_SERVER_ERROR, ObsFault.GENERAL_ERROR, currentPath);
     }
 
-    @ExceptionHandler(InsufficientStockException.class)
-    public ResponseEntity<ErrorResponse> handleStock(
-            InsufficientStockException ex,
-            HttpServletRequest request
-    ) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ErrorResponse.of(ex.getFault(), request.getRequestURI()));
-    }
-
-    @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<ErrorResponse> handleValidation(
-            HttpServletRequest request
-    ) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ErrorResponse.of(ObsFault.INVALID_INPUT, request.getRequestURI()));
-    }
-
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGeneral(
-            Exception ex,
-            HttpServletRequest request
-    ) {
-        log.error("Unhandled exception", ex);
-
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ErrorResponse.of(ObsFault.GENERAL_ERROR, request.getRequestURI()));
+    private Response buildResponse(Response.Status status, ObsFault fault, String path) {
+        return Response.status(status)
+                .entity(ErrorResponse.of(fault, path))
+                .build();
     }
 }
