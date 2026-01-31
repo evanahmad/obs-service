@@ -4,11 +4,11 @@ quarkus:
     username: sa
     password: ""
     jdbc:
-      url: jdbc:h2:mem:inventory-db
-  
+      url: jdbc:h2:mem:obs_db;DB_CLOSE_DELAY=-1
+
   hibernate-orm:
     database:
-      generation: drop-and-create
+      generation: update
     log:
       sql: true
 
